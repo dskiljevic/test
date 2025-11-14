@@ -1,2 +1,2 @@
 # test
-test f2
+test f1 f2
