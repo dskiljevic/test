@@ -31,33 +31,33 @@ mvn release:clean > /dev/null
 rm -f release.properties pom.xml.releaseBackup
 
 # Get version inputs
-echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-read -p "📝 Enter release version (e.g., 1.2.0): " RELEASE_VERSION
-read -p "📝 Enter next development version (e.g., 1.2.1-SNAPSHOT): " DEV_VERSION
-echo "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-
-# Check if the tag already exists locally
-if git rev-parse "$RELEASE_VERSION" >/dev/null 2>&1; then
-    echo "⚠️ Local tag '$RELEASE_VERSION' already exists. Removing it..."
-    git tag -d "$RELEASE_VERSION"
-fi
-
-# Check if the release tag already exists on GitHub
-echo "🔍 Checking if tag $RELEASE_VERSION already exists on origin..."
-
-if git ls-remote --exit-code origin "refs/tags/$RELEASE_VERSION" >/dev/null 2>&1; then
-    echo "❌ Error: Tag '$RELEASE_VERSION' already exists on origin (GitHub)."
-    echo "💡 Please delete it manually on GitHub before re-running the release."
-    exit 1
-fi
-
-echo "✅ No existing tag '$RELEASE_VERSION' found on origin. Proceeding..."
+#echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+#read -p "📝 Enter release version (e.g., 1.2.0): " RELEASE_VERSION
+#read -p "📝 Enter next development version (e.g., 1.2.1-SNAPSHOT): " DEV_VERSION
+#echo "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+#
+## Check if the tag already exists locally
+#if git rev-parse "$RELEASE_VERSION" >/dev/null 2>&1; then
+#    echo "⚠️ Local tag '$RELEASE_VERSION' already exists. Removing it..."
+#    git tag -d "$RELEASE_VERSION"
+#fi
+#
+## Check if the release tag already exists on GitHub
+#echo "🔍 Checking if tag $RELEASE_VERSION already exists on origin..."
+#
+#if git ls-remote --exit-code origin "refs/tags/$RELEASE_VERSION" >/dev/null 2>&1; then
+#    echo "❌ Error: Tag '$RELEASE_VERSION' already exists on origin (GitHub)."
+#    echo "💡 Please delete it manually on GitHub before re-running the release."
+#    exit 1
+#fi
+#
+#echo "✅ No existing tag '$RELEASE_VERSION' found on origin. Proceeding..."
 
 # Run Maven release prepare
 echo "⚙️ Running mvn release:prepare..."
-mvn --batch-mode release:prepare \
-    -DreleaseVersion="$RELEASE_VERSION" \
-    -DdevelopmentVersion="$DEV_VERSION"
+mvn --batch-mode build-helper:parse-version release:prepare \
+    -DreleaseVersion=${parsedVersion.majorVersion}.${parsedVersion.nextMinorVersion}.0 \
+    -DdevelopmentVersion=${parsedVersion.majorVersion}.${parsedVersion.nextMinorVersion}.1-SNAPSHOT \
 
 # Get the created tag (Maven release plugin creates a tag)
 RELEASE_TAG=$(git describe --tags --abbrev=0)
