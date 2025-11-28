@@ -4,31 +4,31 @@ set -e  # Exit on any error
 
 echo "🚀 Starting release process..."
 
-## Check if we're on main branch
-#CURRENT_BRANCH=$(git branch --show-current)
-#if [ "$CURRENT_BRANCH" != "main" ]; then
-#    echo "❌ Error: You must be on main branch to release. Current branch: $CURRENT_BRANCH"
-#    echo "💡 Please switch to main branch: git checkout main"
-#    exit 1
-#fi
-#
-#echo "✅ On main branch"
-#
-## Check for uncommitted changes
-#if ! git diff-index --quiet HEAD --; then
-#    echo "❌ Error: You have uncommitted changes. Please commit or stash them before releasing."
-#    exit 1
-#fi
-#
-#echo "✅ No uncommitted changes"
-#
-## Pull latest changes
-#echo "📥 Pulling latest changes from main..."
-#git pull origin main
-#
-#echo "🧹 Cleaning up old release state..."
-#mvn release:clean > /dev/null
-#rm -f release.properties pom.xml.releaseBackup
+# Check if we're on main branch
+CURRENT_BRANCH=$(git branch --show-current)
+if [ "$CURRENT_BRANCH" != "main" ]; then
+    echo "❌ Error: You must be on main branch to release. Current branch: $CURRENT_BRANCH"
+    echo "💡 Please switch to main branch: git checkout main"
+    exit 1
+fi
+
+echo "✅ On main branch"
+
+# Check for uncommitted changes
+if ! git diff-index --quiet HEAD --; then
+    echo "❌ Error: You have uncommitted changes. Please commit or stash them before releasing."
+    exit 1
+fi
+
+echo "✅ No uncommitted changes"
+
+# Pull latest changes
+echo "📥 Pulling latest changes from main..."
+git pull origin main
+
+echo "🧹 Cleaning up old release state..."
+mvn release:clean > /dev/null
+rm -f release.properties pom.xml.releaseBackup
 
 # Get version inputs
 echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
