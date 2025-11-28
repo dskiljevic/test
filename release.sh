@@ -56,8 +56,8 @@ rm -f release.properties pom.xml.releaseBackup
 # Run Maven release prepare
 echo "⚙️ Running mvn release:prepare..."
 mvn --batch-mode build-helper:parse-version release:prepare \
-    -DreleaseVersion=${parsedVersion.majorVersion}.${parsedVersion.nextMinorVersion}.0 \
-    -DdevelopmentVersion=${parsedVersion.majorVersion}.${parsedVersion.nextMinorVersion}.1-SNAPSHOT \
+    -DreleaseVersion='${parsedVersion.majorVersion}.${parsedVersion.nextMinorVersion}.0' \
+    -DdevelopmentVersion='${parsedVersion.majorVersion}.${parsedVersion.nextMinorVersion}.1-SNAPSHOT' \
 
 # Get the created tag (Maven release plugin creates a tag)
 RELEASE_TAG=$(git describe --tags --abbrev=0)
