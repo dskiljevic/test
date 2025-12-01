@@ -1,26 +1,32 @@
 #!/bin/bash
 
+ARG1=$1
 set -e  # Exit on any error
 
 echo "🚀 Starting release process..."
+echo "ARG1 = $ARG1"
 
-eval $(mvn build-helper:parse-version \
-    help:evaluate -Dexpression=parsedVersion.majorVersion \
-    help:evaluate -Dexpression=parsedVersion.minorVersion \
-    help:evaluate -Dexpression=parsedVersion.incrementalVersion \
-    help:evaluate -Dexpression=parsedVersion.nextMajorVersion \
-    help:evaluate -Dexpression=parsedVersion.nextMinorVersion \
-    help:evaluate -Dexpression=parsedVersion.nextPatchVersion \
-    -q -DforceStdout | \
-    awk '
-        /majorVersion$/       { print "MAJOR=" $0 }
-        /minorVersion$/       { print "MINOR=" $0 }
-        /incrementalVersion$/ { print "PATCH=" $0 }
-        /nextMajorVersion$/   { print "NEXT_MAJOR=" $0 }
-        /nextMinorVersion$/   { print "NEXT_MINOR=" $0 }
-        /nextPatchVersion$/   { print "NEXT_PATCH=" $0 }
-    ')
+VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+echo "Current version: $VERSION"
 
+IFS='.-' read MAJOR MINOR PATCH SNAP <<< "$VERSION"
+
+if [ "$ARG1" == "INCREMENT_PATCH" ]; then
+    RELEASE_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+    DEV_VERSION="${MAJOR}.${MINOR}.$((PATCH + 1))-SNAPSHOT"
+elif [ "$ARG1" == "INCREMENT_MINOR" ]; then
+    RELEASE_VERSION="${MAJOR}.${MINOR + 1}.0"
+    DEV_VERSION="${MAJOR}.$((MINOR + 1)).1-SNAPSHOT"
+elif [ "$ARG1" == "INCREMENT_MAJOR" ]; then
+    RELEASE_VERSION="$((MAJOR + 1)).0.0"
+    DEV_VERSION="$((MAJOR + 1)).0.1-SNAPSHOT"
+else
+    echo "❌ Unsupported ARG1 value: $ARG1"
+    exit 1
+fi
+
+echo "RELEASE_VERSION=$RELEASE_VERSION"
+echo "DEV_VERSION=$DEV_VERSION"
 
 # Check if we're on main branch
 CURRENT_BRANCH=$(git branch --show-current)
@@ -31,9 +37,6 @@ if [ "$CURRENT_BRANCH" != "main" ]; then
 fi
 
 echo "✅ On main branch"
-
-echo "$MAJOR $MINOR $PATCH"
-echo "$NEXT_MAJOR $NEXT_MINOR $NEXT_PATCH"
 
 
 # Check for uncommitted changes
@@ -57,29 +60,29 @@ rm -f release.properties pom.xml.releaseBackup
 #read -p "📝 Enter release version (e.g., 1.2.0): " RELEASE_VERSION
 #read -p "📝 Enter next development version (e.g., 1.2.1-SNAPSHOT): " DEV_VERSION
 #echo "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-#
-## Check if the tag already exists locally
-#if git rev-parse "$RELEASE_VERSION" >/dev/null 2>&1; then
-#    echo "⚠️ Local tag '$RELEASE_VERSION' already exists. Removing it..."
-#    git tag -d "$RELEASE_VERSION"
-#fi
-#
-## Check if the release tag already exists on GitHub
-#echo "🔍 Checking if tag $RELEASE_VERSION already exists on origin..."
-#
-#if git ls-remote --exit-code origin "refs/tags/$RELEASE_VERSION" >/dev/null 2>&1; then
-#    echo "❌ Error: Tag '$RELEASE_VERSION' already exists on origin (GitHub)."
-#    echo "💡 Please delete it manually on GitHub before re-running the release."
-#    exit 1
-#fi
-#
-#echo "✅ No existing tag '$RELEASE_VERSION' found on origin. Proceeding..."
+
+# Check if the tag already exists locally
+if git rev-parse "$RELEASE_VERSION" >/dev/null 2>&1; then
+    echo "⚠️ Local tag '$RELEASE_VERSION' already exists. Removing it..."
+    git tag -d "$RELEASE_VERSION"
+fi
+
+# Check if the release tag already exists on GitHub
+echo "🔍 Checking if tag $RELEASE_VERSION already exists on origin..."
+
+if git ls-remote --exit-code origin "refs/tags/$RELEASE_VERSION" >/dev/null 2>&1; then
+    echo "❌ Error: Tag '$RELEASE_VERSION' already exists on origin (GitHub)."
+    echo "💡 Please delete it manually on GitHub before re-running the release."
+    exit 1
+fi
+
+echo "✅ No existing tag '$RELEASE_VERSION' found on origin. Proceeding..."
 
 # Run Maven release prepare
 echo "⚙️ Running mvn release:prepare..."
 mvn --batch-mode build-helper:parse-version release:prepare \
-    -DreleaseVersion='${parsedVersion.majorVersion}.${parsedVersion.nextMinorVersion}.0' \
-    -DdevelopmentVersion='${parsedVersion.majorVersion}.${parsedVersion.nextMinorVersion}.1-SNAPSHOT' \
+    -DreleaseVersion="$RELEASE_VERSION" \
+    -DdevelopmentVersion="$DEV_VERSION"
 
 # Get the created tag (Maven release plugin creates a tag)
 RELEASE_TAG=$(git describe --tags --abbrev=0)
