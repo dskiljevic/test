@@ -4,6 +4,24 @@ set -e  # Exit on any error
 
 echo "🚀 Starting release process..."
 
+eval $(mvn build-helper:parse-version \
+    help:evaluate -Dexpression=parsedVersion.majorVersion \
+    help:evaluate -Dexpression=parsedVersion.minorVersion \
+    help:evaluate -Dexpression=parsedVersion.incrementalVersion \
+    help:evaluate -Dexpression=parsedVersion.nextMajorVersion \
+    help:evaluate -Dexpression=parsedVersion.nextMinorVersion \
+    help:evaluate -Dexpression=parsedVersion.nextPatchVersion \
+    -q -DforceStdout | \
+    awk '
+        /majorVersion$/       { print "MAJOR=" $0 }
+        /minorVersion$/       { print "MINOR=" $0 }
+        /incrementalVersion$/ { print "PATCH=" $0 }
+        /nextMajorVersion$/   { print "NEXT_MAJOR=" $0 }
+        /nextMinorVersion$/   { print "NEXT_MINOR=" $0 }
+        /nextPatchVersion$/   { print "NEXT_PATCH=" $0 }
+    ')
+
+
 # Check if we're on main branch
 CURRENT_BRANCH=$(git branch --show-current)
 if [ "$CURRENT_BRANCH" != "main" ]; then
@@ -13,6 +31,10 @@ if [ "$CURRENT_BRANCH" != "main" ]; then
 fi
 
 echo "✅ On main branch"
+
+echo "$MAJOR $MINOR $PATCH"
+echo "$NEXT_MAJOR $NEXT_MINOR $NEXT_PATCH"
+
 
 # Check for uncommitted changes
 if ! git diff-index --quiet HEAD --; then
